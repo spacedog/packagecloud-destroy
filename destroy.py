@@ -109,8 +109,10 @@ def main():
         print_pkg_to_yank(versions, cfg["versions_to_keep"])
     elif type(cfg["repository"]).__name__ == "list":
         for repo in cfg["repository"]:
+            print "[%s]" % repo
             api_url_request = "/api/v1/repos/{}/{}/packages/rpm/el.json".format(cfg["user"], repo)
-            get_pkg_versions_to_destroy(s,api_call(s,api_url_request), cfg["versions_to_keep"] )
+            versions = get_pkg_versions_to_destroy(s,api_call(s,api_url_request), cfg["versions_to_keep"] )
+            print_pkg_to_yank(versions, cfg["versions_to_keep"])
     else:
         print "[ERROR]: Unsupported type %s for repository. Use string or list" % type(cfg["repository"]).__name__
         s.close
