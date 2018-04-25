@@ -1,5 +1,6 @@
 #!/usr/bin/python
 import sys
+import os
 import requests
 import yaml
 
@@ -58,18 +59,11 @@ def print_pkg_to_yank(pkg_versions, version_to_keep):
 
         i = 1
         for v in sorted(pkg_versions_to_sort.keys(), reverse = True):
-            if i < version_to_keep:
-                print "|-- %-2d %-25s create at %s" % (
-                    i,
-                    pkg_versions_to_sort[v][0],
-                    v,
-                )
-            else:
-                print "|-- %-2d %-25s create at %s (destroy url %s)" % (
-                    i,
-                    pkg_versions_to_sort[v][0],
-                    v,
-                    pkg_versions_to_sort[v][1],
+            if i > version_to_keep:
+                url = pkg_versions_to_sort[v][1]
+                print "%s %s" % (
+                    os.path.dirname(url.replace("/api/v1/repos/", "")),
+                    os.path.basename(url)
                 )
             i = i + 1
 
