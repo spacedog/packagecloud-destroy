@@ -31,16 +31,27 @@ def api_call(s, url_request, method = "get"):
     return result
 
 # Print packages to remove
-def get_pkg_versions_to_destroy(s, packages, versions_to_keep):
+def get_pkg_versions_to_destroy(s, packages, versions_to_keep, sub_project="",version="",release=""):
     pkg_versions = {}
     versions     = {}
     for package in packages:
+        versions_to_push = []
         # Proceed only if versions_count is greate then versions we would like to keep
         if package["versions_count"] > versions_to_keep:
             versions = api_call(s, package["versions_url"])
-            pkg_versions.update({
-                package["name"]: versions
-            })
+
+
+
+
+            if package["name"].startswith(sub_project):
+                for v in versions:
+                    if ((len(version) > 0  and v['version'].find(version)== 0) or (len(release) > 0  and v['release'].find(release)== 0)):
+                        versions_to_push.append(v)
+
+                print len(versions_to_push)
+                pkg_versions.update({
+                    package["name"]: versions_to_push
+                })
 
     return pkg_versions
 
@@ -90,6 +101,19 @@ def main():
     if not 'repository' in cfg:
         print "[ERROR]: repository must be defined"
         sys.exit(1)
+    if not 'sub_project' in cfg:
+        sub_project = ""
+    else:
+        sub_project = cfg["sub_project"]
+    if not 'version' in cfg:
+        version = ""
+    else:
+        version = cfg["version"]
+    if not 'release' in cfg:
+        release = ""
+    else:
+        release = cfg["release"]
+
     if not 'versions_to_keep' in cfg:
         cfg["versions_to_keep"] = 30
 
@@ -99,13 +123,13 @@ def main():
     # get all packages rpm packages for EL
     if type(cfg["repository"]).__name__ == "str":
         api_url_request = "/api/v1/repos/{}/{}/packages/rpm/el.json".format(cfg["user"], cfg["repository"])
-        versions = get_pkg_versions_to_destroy(s,api_call(s,api_url_request),cfg["versions_to_keep"])
+        versions = get_pkg_versions_to_destroy(s,api_call(s,api_url_request),cfg["versions_to_keep"], sub_project, version, release)
         print_pkg_to_yank(versions, cfg["versions_to_keep"])
     elif type(cfg["repository"]).__name__ == "list":
         for repo in cfg["repository"]:
             print "[%s]" % repo
             api_url_request = "/api/v1/repos/{}/{}/packages/rpm/el.json".format(cfg["user"], repo)
-            versions = get_pkg_versions_to_destroy(s,api_call(s,api_url_request), cfg["versions_to_keep"] )
+            versions = get_pkg_versions_to_destroy(s,api_call(s,api_url_request), cfg["versions_to_keep"], sub_project, version, release)
             print_pkg_to_yank(versions, cfg["versions_to_keep"])
     else:
         print "[ERROR]: Unsupported type %s for repository. Use string or list" % type(cfg["repository"]).__name__
