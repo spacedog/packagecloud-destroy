@@ -2,7 +2,8 @@
 import sys
 import os
 import requests
-import yaml
+#import yaml
+import argparse
 
 api_url_base     = "https://packagecloud.io"
 
@@ -41,14 +42,11 @@ def get_pkg_versions_to_destroy(s, packages, versions_to_keep, sub_project="",ve
             versions = api_call(s, package["versions_url"])
 
 
-
-
             if package["name"].startswith(sub_project):
                 for v in versions:
                     if ((len(version) > 0  and v['version'].find(version)== 0) or (len(release) > 0  and v['release'].find(release)== 0)):
                         versions_to_push.append(v)
 
-                print len(versions_to_push)
                 pkg_versions.update({
                     package["name"]: versions_to_push
                 })
@@ -83,56 +81,35 @@ def print_pkg_to_yank(pkg_versions, version_to_keep):
 
 def main():
 
-    # Read config file
-    try:
-        with open("config.yaml") as config_file:
-            cfg = yaml.load(config_file)
-    except IOError:
-        print "[ERROR]: config.yaml file not found"
-        sys.exit(1)
+    # Command line args
+    parser = argparse.ArgumentParser(description='Command line parameters')
+    parser.add_argument('--api_token',   dest="api_token",   help="api key to use to connect to packagecloud")
+    parser.add_argument('--keep',        dest="keep",        type=int, help="versions to keep")
+    parser.add_argument('--user',        dest="user",        help="username to use to connect to packagecloud")
+    parser.add_argument('--repo',        dest="repo",        help="repository name where to search packages", action="append")
+    parser.add_argument('--subproject',  dest="subproject",  nargs="?", help="subproject name to search for", default="")
+    parser.add_argument('--version',     dest="version",     nargs="?", help="version to search for", default="")
+    parser.add_argument('--release',     dest="release",     nargs="?", help="release to search for", default="")
 
-    # Configuraion check
-    if not 'api_token' in cfg:
-        print "[ERROR]: api_token must be defined"
-        sys.exit(1)
-    if not 'user' in cfg:
-        print "[ERROR]: user must be defined"
-        sys.exit(1)
-    if not 'repository' in cfg:
-        print "[ERROR]: repository must be defined"
-        sys.exit(1)
-    if not 'sub_project' in cfg:
-        sub_project = ""
-    else:
-        sub_project = cfg["sub_project"]
-    if not 'version' in cfg:
-        version = ""
-    else:
-        version = cfg["version"]
-    if not 'release' in cfg:
-        release = ""
-    else:
-        release = cfg["release"]
-
-    if not 'versions_to_keep' in cfg:
-        cfg["versions_to_keep"] = 30
+    args = parser.parse_args()
 
     s = requests.Session()
-    s.auth = (cfg["api_token"], "")
+    s.auth = (args.api_token, "")
 
     # get all packages rpm packages for EL
-    if type(cfg["repository"]).__name__ == "str":
-        api_url_request = "/api/v1/repos/{}/{}/packages/rpm/el.json".format(cfg["user"], cfg["repository"])
-        versions = get_pkg_versions_to_destroy(s,api_call(s,api_url_request),cfg["versions_to_keep"], sub_project, version, release)
-        print_pkg_to_yank(versions, cfg["versions_to_keep"])
-    elif type(cfg["repository"]).__name__ == "list":
-        for repo in cfg["repository"]:
+    if type(args.repo).__name__ == "str":
+        api_url_request = "/api/v1/repos/{}/{}/packages/rpm/el.json".format(args.user, args.repo)
+        versions = get_pkg_versions_to_destroy(s,api_call(s,api_url_request),args.keep, args.subproject, args.version, args.release)
+        print_pkg_to_yank(versions, args.keep)
+    elif type(args.repo).__name__ == "list":
+        for repo in args.repo:
             print "[%s]" % repo
-            api_url_request = "/api/v1/repos/{}/{}/packages/rpm/el.json".format(cfg["user"], repo)
-            versions = get_pkg_versions_to_destroy(s,api_call(s,api_url_request), cfg["versions_to_keep"], sub_project, version, release)
-            print_pkg_to_yank(versions, cfg["versions_to_keep"])
+            api_url_request = "/api/v1/repos/{}/{}/packages/rpm/el.json".format(args.user, repo)
+            print api_url_request
+            versions = get_pkg_versions_to_destroy(s,api_call(s,api_url_request),args.keep, args.subproject, args.version, args.release)
+            print_pkg_to_yank(versions, args.keep)
     else:
-        print "[ERROR]: Unsupported type %s for repository. Use string or list" % type(cfg["repository"]).__name__
+        print "[ERROR]: Unsupported type %s for repository. Use string or list" % type(args.repo).__name__
         s.close
         sys.exit(1)
 
