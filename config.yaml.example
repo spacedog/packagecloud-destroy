@@ -1,5 +1,0 @@
----
-api_token:        "token_here
-user:             "user"
-repository:       "repo"
-versions_to_keep:  30

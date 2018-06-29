@@ -2,7 +2,6 @@
 import sys
 import os
 import requests
-#import yaml
 import argparse
 
 api_url_base     = "https://packagecloud.io"
@@ -32,26 +31,63 @@ def api_call(s, url_request, method = "get"):
     return result
 
 # Print packages to remove
-def get_pkg_versions_to_destroy(s, packages, versions_to_keep, sub_project="",version="",release=""):
+def get_pkg_versions_to_destroy(s, packages, keep, sub_project="",version="",release=""):
     pkg_versions = {}
     versions     = {}
+    print "=" * 80
     for package in packages:
         versions_to_push = []
-        # Proceed only if versions_count is greate then versions we would like to keep
-        if package["versions_count"] > versions_to_keep:
-            versions = api_call(s, package["versions_url"])
 
-
+        # look for specific package if sub_project is set
+        if len(sub_project) > 0:
             if package["name"].startswith(sub_project):
-                for v in versions:
-                    if ((len(version) > 0  and v['version'].find(version)== 0) or (len(release) > 0  and v['release'].find(release)== 0)):
-                        versions_to_push.append(v)
+                print "[INFO]: Package: %s" % package["name"]
+                versions = api_call(s, package["versions_url"])
+                pkg_versions.update({package["name"]: search_for_version(versions, keep, version, release)})
 
-                pkg_versions.update({
-                    package["name"]: versions_to_push
-                })
+            else:
+                # continue with next package
+                continue
+        # if sub_project isn't set proceed wit all packages
+        else:
+            print "[INFO]: Package: %s" % package["name"]
+            versions = api_call(s, package["versions_url"])
+            pkg_versions.update({package["name"]: search_for_version(versions, keep, version, release)})
 
+    print "=" * 80
     return pkg_versions
+
+def search_for_version(versions, keep, version="", release=""):
+    versions_result = []
+    for v in versions:
+        version_to_append = True
+        # if version is set then look for a version
+        if (len(version) > 0):
+            if (v['version'].find(version) == 0):
+                version_to_append = True
+            else:
+                version_to_append = False
+        # if version is not set then append package version
+        else:
+            version_to_append = True
+
+        # basically the same for release
+        if (len(release) > 0):
+            if (v['release'].find(release) == 0):
+                version_to_append = True
+            else:
+                version_to_append = False
+        # if release is not set then append package release
+        else:
+            version_to_append = True
+
+
+        if version_to_append:
+            versions_result.append(v)
+
+    print "  Total %s versions found. Need to keep: %s" % (len(versions_result), keep)
+    return versions_result
+
 
 def print_pkg_to_yank(pkg_versions, version_to_keep):
 
@@ -97,21 +133,10 @@ def main():
     s.auth = (args.api_token, "")
 
     # get all packages rpm packages for EL
-    if type(args.repo).__name__ == "str":
-        api_url_request = "/api/v1/repos/{}/{}/packages/rpm/el.json".format(args.user, args.repo)
+    for repo in args.repo:
+        api_url_request = "/api/v1/repos/{}/{}/packages/rpm/el.json".format(args.user, repo)
         versions = get_pkg_versions_to_destroy(s,api_call(s,api_url_request),args.keep, args.subproject, args.version, args.release)
         print_pkg_to_yank(versions, args.keep)
-    elif type(args.repo).__name__ == "list":
-        for repo in args.repo:
-            print "[%s]" % repo
-            api_url_request = "/api/v1/repos/{}/{}/packages/rpm/el.json".format(args.user, repo)
-            print api_url_request
-            versions = get_pkg_versions_to_destroy(s,api_call(s,api_url_request),args.keep, args.subproject, args.version, args.release)
-            print_pkg_to_yank(versions, args.keep)
-    else:
-        print "[ERROR]: Unsupported type %s for repository. Use string or list" % type(args.repo).__name__
-        s.close
-        sys.exit(1)
 
     # close session
     s.close
