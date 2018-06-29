@@ -122,7 +122,7 @@ def main():
     parser.add_argument('--api_token',   dest="api_token",   help="api key to use to connect to packagecloud")
     parser.add_argument('--keep',        dest="keep",        type=int, help="versions to keep")
     parser.add_argument('--user',        dest="user",        help="username to use to connect to packagecloud")
-    parser.add_argument('--repo',        dest="repo",        help="repository name where to search packages", action="append")
+    parser.add_argument('--repo',        dest="repo",        help="repository name where to search packages", action="append", default=[])
     parser.add_argument('--subproject',  dest="subproject",  nargs="?", help="subproject name to search for", default="")
     parser.add_argument('--version',     dest="version",     nargs="?", help="version to search for", default="")
     parser.add_argument('--release',     dest="release",     nargs="?", help="release to search for", default="")
