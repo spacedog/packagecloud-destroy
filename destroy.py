@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 import sys
 import os
 import requests
@@ -40,7 +40,7 @@ def get_pkg_versions_to_destroy(s, packages, keep, sub_project="",version="",rel
 
         # look for specific package if sub_project is set
         if len(sub_project) > 0:
-            if package["name"].startswith(sub_project):
+            if package["name"] == sub_project:
                 print "[INFO]: Package: %s" % package["name"]
                 versions = api_call(s, package["versions_url"])
                 pkg_versions.update({package["name"]: search_for_version(versions, keep, version, release)})
