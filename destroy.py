@@ -98,7 +98,7 @@ def print_pkg_to_yank(pkg_versions, version_to_keep):
         pkg_versions_to_sort = {}
         for version in pkg_versions[pkg]:
             pkg_versions_to_sort[version["created_at"]] = [
-                "packagecloud yank %s-%s" % (version["version"], version["release"]),
+                "package_cloud yank %s-%s" % (version["version"], version["release"]),
                 version["destroy_url"]
             ]
 
@@ -106,7 +106,7 @@ def print_pkg_to_yank(pkg_versions, version_to_keep):
         for v in sorted(pkg_versions_to_sort.keys(), reverse = True):
             if i > version_to_keep:
                 url = pkg_versions_to_sort[v][1]
-                print "packagecloud yank %s %s" % (
+                print "package_cloud yank %s %s" % (
                     os.path.dirname(url.replace("/api/v1/repos/", "")),
                     os.path.basename(url)
                 )
