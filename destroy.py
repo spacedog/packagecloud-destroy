@@ -34,14 +34,14 @@ def api_call(s, url_request, method = "get"):
 def get_pkg_versions_to_destroy(s, packages, keep, sub_project="",version="",release=""):
     pkg_versions = {}
     versions     = {}
-    print "=" * 80
+    print "#", "=" * 80
     for package in packages:
         versions_to_push = []
 
         # look for specific package if sub_project is set
         if len(sub_project) > 0:
             if package["name"] == sub_project:
-                print "[INFO]: Package: %s" % package["name"]
+                print "# [INFO]: Package: %s" % package["name"]
                 versions = api_call(s, package["versions_url"])
                 pkg_versions.update({package["name"]: search_for_version(versions, keep, version, release)})
 
@@ -50,11 +50,11 @@ def get_pkg_versions_to_destroy(s, packages, keep, sub_project="",version="",rel
                 continue
         # if sub_project isn't set proceed wit all packages
         else:
-            print "[INFO]: Package: %s" % package["name"]
+            print "# [INFO]: Package: %s" % package["name"]
             versions = api_call(s, package["versions_url"])
             pkg_versions.update({package["name"]: search_for_version(versions, keep, version, release)})
 
-    print "=" * 80
+    print "#", "=" * 80
     return pkg_versions
 
 def search_for_version(versions, keep, version="", release=""):
@@ -85,7 +85,7 @@ def search_for_version(versions, keep, version="", release=""):
         if version_to_append:
             versions_result.append(v)
 
-    print "  Total %s versions found. Need to keep: %s" % (len(versions_result), keep)
+    print "#  Total %s versions found. Need to keep: %s" % (len(versions_result), keep)
     return versions_result
 
 
@@ -93,12 +93,12 @@ def print_pkg_to_yank(pkg_versions, version_to_keep):
 
     for pkg in pkg_versions.keys():
 
-        print "* %s:" % pkg
+        print "# * %s:" % pkg
 
         pkg_versions_to_sort = {}
         for version in pkg_versions[pkg]:
             pkg_versions_to_sort[version["created_at"]] = [
-                "%s-%s" % (version["version"], version["release"]),
+                "packagecloud yank %s-%s" % (version["version"], version["release"]),
                 version["destroy_url"]
             ]
 
@@ -106,7 +106,7 @@ def print_pkg_to_yank(pkg_versions, version_to_keep):
         for v in sorted(pkg_versions_to_sort.keys(), reverse = True):
             if i > version_to_keep:
                 url = pkg_versions_to_sort[v][1]
-                print "%s %s" % (
+                print "packagecloud yank %s %s" % (
                     os.path.dirname(url.replace("/api/v1/repos/", "")),
                     os.path.basename(url)
                 )
