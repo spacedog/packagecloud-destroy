@@ -132,6 +132,7 @@ def main():
     parser.add_argument('--version',    dest="version",    nargs="?", help="version to search for", default="")
     parser.add_argument('--release',    dest="release",    nargs="?", help="release to search for", default="")
     parser.add_argument('--yes',        dest="yes",        help="answer 'yes' to all prompts", action="store_true")
+    parser.add_argument('--no',         dest="no",         help="answer 'no' to all prompts; this will print out packages to be deleted and exit", action="store_true")
 
     args = parser.parse_args()
 
@@ -150,7 +151,7 @@ def main():
                                                    args.keep, args.subproject, args.version, args.release)
             if not versions:
                 print "No packages eligible for deletion."
-            elif args.yes or gate_deletion():
+            elif not args.no and (args.yes or gate_deletion()):
                 destroy_packages(session, versions)
 
     # close session
