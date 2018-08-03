@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 import os
 import re
 import requests
@@ -15,6 +15,10 @@ def api_call(session, url_request, method="get"):
     # Use global session
     url_attr = getattr(session, method)(url)
     result = url_attr.json()
+
+    # Errors will return as a dict rather than a list
+    if isinstance(result, dict):
+        return []
 
     # Check if there is multiple pages of data
     if 'Per-Page' in url_attr.headers and 'Total' in url_attr.headers:
@@ -34,7 +38,6 @@ def api_call(session, url_request, method="get"):
 # Print packages to remove
 def get_pkg_versions_to_destroy(session, packages, keep, sub_project="", version="", release=""):
     pkg_versions = {}
-    print "=" * 80
     for package in packages:
         # look for specific package if sub_project is set
         if len(sub_project) > 0:
@@ -135,15 +138,20 @@ def main():
     session = requests.Session()
     session.auth = (args.api_token, "")
 
+    distros = ["rpm/el", "deb/ubuntu/trusty", "deb/ubuntu/xenial", "deb/ubuntu/bionic"]
+
     # get all packages rpm packages for EL
     for repo in args.repo:
-        api_url_request = "/api/v1/repos/{}/{}/packages/rpm/el.json".format(args.user, repo)
-        versions = get_pkg_versions_to_destroy(session, api_call(session, api_url_request),
-                                               args.keep, args.subproject, args.version, args.release)
-        if not versions:
-            print "No packages eligible for deletion."
-        elif args.yes or gate_deletion():
-            destroy_packages(session, versions)
+        for distro in distros:
+            print "=" * 80
+            print "Checking packages for distro %s\n" % distro
+            api_url_request = "/api/v1/repos/{}/{}/packages/{}.json".format(args.user, repo, distro)
+            versions = get_pkg_versions_to_destroy(session, api_call(session, api_url_request),
+                                                   args.keep, args.subproject, args.version, args.release)
+            if not versions:
+                print "No packages eligible for deletion."
+            elif args.yes or gate_deletion():
+                destroy_packages(session, versions)
 
     # close session
     session.close
